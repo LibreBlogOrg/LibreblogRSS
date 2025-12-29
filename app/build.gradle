@@ -1,0 +1,56 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'org.libreblog.rss'
+    compileSdk {
+        version = release(36)
+    }
+
+    defaultConfig {
+        applicationId "org.libreblog.rss"
+        minSdk 28
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    packaging {
+        resources.pickFirsts += ["**/rome-utils-2.0.0.jar"]
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.recyclerview
+    // other libraries
+    implementation libs.rome
+    implementation libs.rome.modules
+    implementation libs.lingua
+    implementation libs.glide
+    annotationProcessor libs.compiler
+    implementation libs.commons.text
+    implementation libs.jsoup
+    implementation libs.avif.integration
+    implementation libs.glide.svg
+    implementation libs.media3.exoplayer
+    implementation libs.media3.exoplayer.dash
+    implementation libs.media3.ui
+    implementation libs.media3.ui.compose
+}
