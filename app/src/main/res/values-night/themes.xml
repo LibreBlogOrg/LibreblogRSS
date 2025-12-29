@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.LibreBlogRSS" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:colorBackground">@color/md_theme_dark_background</item>
+    </style>
+</resources>
