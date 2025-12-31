@@ -28,4 +28,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LibreblogRSS-APK
-          path: app/build/outputs/apk/debug/libreblog-rss.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
