@@ -127,13 +127,14 @@ public class RssHandler {
         values.put(DbHandler.ARTICLES_TITLE_COL, article.title);
         article.ctitle = cleanedTitle;
         values.put(DbHandler.ARTICLES_CLEANED_TITLE_COL, article.ctitle);
-        article.link = entry.getLink();
+        article.link = entry.getLink().trim();
         values.put(DbHandler.ARTICLES_LINK_COL, article.link);
         article.authors = authorsNamesArr.toString();
         values.put(DbHandler.ARTICLES_AUTHORS_COL, article.authors);
         article.categories = categoriesNamesArr.toString();
         values.put(DbHandler.ARTICLES_CATEGORIES_COL, article.categories);
         article.comments = entry.getComments();
+        if (article.comments != null) article.comments = article.comments.trim();
         values.put(DbHandler.ARTICLES_COMMENTS_COL, article.comments);
         article.published = published;
         values.put(DbHandler.ARTICLES_PUBLISHED_COL, article.published);
