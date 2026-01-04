@@ -8,10 +8,10 @@
 
 <hr/>
 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot1.avif" alt="Feed" style="width:300px;">
-  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot2.avif" alt="Feed" style="width:300px;">
-  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot3.avif" alt="Feed" style="width:300px;">
-  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot4.avif" alt="Feed" style="width:300px;">
-  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot5.avif" alt="Feed" style="width:300px;">
+  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot1.avif" alt="Feed" style="width:250px;">
+  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot2.avif" alt="Feed" style="width:250px;">
+  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot3.avif" alt="Feed" style="width:250px;">
+  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot4.avif" alt="Feed" style="width:250px;">
+  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot5.avif" alt="Feed" style="width:250px;">
 </div>
 <hr/>
