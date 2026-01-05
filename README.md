@@ -5,6 +5,7 @@
 *A simple Android RSS reader that feels like a social timeline — supports multimedia, .onion sites, and works well with non-monopolistic platforms (Mastodon, Substack, etc.).*
 
 [![Download APK](https://badgen.net/badge/Download/APK/green?icon=java)](https://github.com/LibreBlogOrg/LibreblogRSS/actions/runs/20691366809/artifacts/5017138749)
+[![Changelog](https://badgen.net/badge/CHANGE/LOG/red)](https://github.com/LibreBlogOrg/LibreblogRSS/blob/main/CHANGELOG.md)
 
 <hr/>
 <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -13,5 +14,40 @@
   <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot3.avif" alt="Feed" style="width:250px;">
   <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot4.avif" alt="Feed" style="width:250px;">
   <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot5.avif" alt="Feed" style="width:250px;">
+  <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot6.avif" alt="Feed" style="width:250px;">
 </div>
 <hr/>
+
+## Features
+
+- Lightweight, customisable recommendation algorithm.
+- Light and dark themes.
+- Fullscreen video player.
+- No ads, no tracking (not even for bug reports).
+- Follow .onion sites (requires Orbot).
+- Import/export OPML.
+- Copy and paste links — the app will try to find the feed and the profile image.
+
+## (Opinionated) Limitations
+
+- No notifications, no badge counts, no gamification — no anxiety.
+- No folders or categorisation — just a flow.
+- Posts are deleted after a customisable number of days (unless liked).
+- Articles open in the default browser (or in Tor for .onion links).
+- The 'Rate App' button is not working because the app won't be available on app stores [for now].
+- The app does not run in the background — posts load only while in use.
+
+## Why bother supporting .onion when few news organizations are there?
+
+Because I’m experimenting with making static sites built with this [Editor](https://github.com/LibreBlogOrg/LibreBlog) easily accessible in the app (using OnionShare).
+
+## Who is this app for?
+
+For people done with social platforms who still want to follow things they find interesting.
+
+## Installation
+
+- Go to [Actions](https://github.com/LibreBlogOrg/LibreblogRSS/actions).
+- Open the most recent "Build Android APK".
+- Download the artifact "LibreblogRSS-APK".
+- Install the APK on an Android phone.
