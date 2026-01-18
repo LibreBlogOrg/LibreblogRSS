@@ -34,12 +34,11 @@
 - No folders or categorisation — just a flow.
 - Posts are deleted after a customisable number of days (unless liked).
 - Articles open in the default browser (or in Tor for .onion links).
-- The 'Rate App' button is not working because the app won't be available on app stores [for now (?)].
-- The app does not run in the background — posts load only while in use.
+- The app does not run in the background — posts load only while it's in use.
 
 ## Why bother supporting .onion when few news organizations are there?
 
-Because I’m experimenting with making static sites built with this [Editor](https://github.com/LibreBlogOrg/LibreBlog) easily accessible in the app (using OnionShare).
+To make static sites built with this [Editor](https://github.com/LibreBlogOrg/LibreBlog) easily accessible in the app (using OnionShare).
 
 ## Who is this app for?
 
