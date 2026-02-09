@@ -43,6 +43,8 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
           outputName: app-release.apk
+        env:
+          BUILD_TOOLS_VERSION: "36.0.0"
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v2
