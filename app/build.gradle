@@ -33,6 +33,12 @@ android {
     }
 }
 
+tasks.register('printVersion') {
+    doLast {
+        println android.defaultConfig.versionName
+    }
+}
+
 dependencies {
     implementation libs.appcompat
     implementation libs.material
