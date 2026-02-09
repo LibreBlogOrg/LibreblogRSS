@@ -34,7 +34,7 @@ jobs:
       - name: Build release APK
         run: ./gradlew assembleRelease
 
-      - name: Sign & align APK
+      - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: app/build/outputs/apk/release
@@ -42,11 +42,26 @@ jobs:
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-          outputName: app-release.apk
         env:
           BUILD_TOOLS_VERSION: "36.0.0"
+
+      - name: Get version and rename signed APK
+        run: |
+          version=$(./gradlew -q :app:printVersion)
+          src=app/build/outputs/apk/release/app-release-unsigned-signed.apk
+          dst=dist/app-release-${version}.apk
+          mkdir -p dist
+          rm -f dist/* || true
+          if [ -f "$src" ]; then
+            mv "$src" "$dst"
+            echo "Renamed to $dst"
+          else
+            echo "Signed APK not found: $src"
+            ls -l app/build/outputs/apk/release || true
+            exit 1
+          fi
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/app-release-*.apk
