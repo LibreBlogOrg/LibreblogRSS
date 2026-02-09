@@ -30,35 +30,21 @@ jobs:
         with:
           api-level: 36
           build-tools: 36.0.0
-
-      - name: Restore keystore from secret
-        run: |
-          mkdir -p ~/.keystore
-          printf '%s' "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ~/.keystore/release.keystore
           
       - name: Build release APK
         run: ./gradlew assembleRelease
 
-      - name: Sign APK with apksigner
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          version=$(./gradlew -q :app:printVersion)
-          BUILD_APK=app/build/outputs/apk/release/app-release-unsigned.apk
-          SIGNED_APK=dist/app-release-${version}.apk
-          mkdir -p dist
-          apksigner sign \
-            --ks ~/.keystore/release.keystore \
-            --ks-pass pass:$KEYSTORE_PASSWORD \
-            --key-pass pass:$KEY_PASSWORD \
-            --ks-key-alias $KEY_ALIAS \
-            --out $SIGNED_APK \
-            $BUILD_APK
-          apksigner verify --print-certs $SIGNED_APK
+      - name: Sign & align APK
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          outputName: app-release.apk
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/app-release-*.apk
+          files: app/build/outputs/apk/release/app-release.apk
