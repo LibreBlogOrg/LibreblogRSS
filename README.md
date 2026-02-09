@@ -4,7 +4,7 @@
 
 *A simple Android RSS reader that feels like a social timeline — supports multimedia, .onion sites, and works well with non-monopolistic platforms (Mastodon, Substack, etc.).*
 
-[![Download APK](https://badgen.net/badge/Download/APK/green?icon=java)](https://github.com/LibreBlogOrg/LibreblogRSS/actions/runs/20691366809/artifacts/5017138749)
+[![Download APK](https://badgen.net/badge/Download/APK/green?icon=java)](https://github.com/LibreBlogOrg/LibreblogRSS/releases)
 [![Changelog](https://badgen.net/badge/CHANGE/LOG/red)](https://github.com/LibreBlogOrg/LibreblogRSS/blob/main/CHANGELOG.md)
 
 <hr/>
