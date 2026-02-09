@@ -43,10 +43,3 @@ To make static sites built with this [Editor](https://github.com/LibreBlogOrg/Li
 ## Who is this app for?
 
 For people done with social platforms who still want to follow things they find interesting.
-
-## Installation
-
-- Go to [Actions](https://github.com/LibreBlogOrg/LibreblogRSS/actions).
-- Open the most recent "Build Android APK".
-- Download the artifact "LibreblogRSS-APK".
-- Install the APK on an Android phone.
