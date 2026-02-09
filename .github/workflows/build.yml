@@ -25,8 +25,11 @@ jobs:
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Setup Android SDK
+      - name: Install Android SDK build-tools & platform-tools
         uses: android-actions/setup-android@v3
+        with:
+          api-level: 36
+          build-tools: 36.0.0
 
       - name: Restore keystore from secret
         run: |
