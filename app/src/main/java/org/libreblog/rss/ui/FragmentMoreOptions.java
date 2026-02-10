@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import org.libreblog.rss.R;
 import org.libreblog.rss.core.DbHandler;
 import org.libreblog.rss.core.OpmlHandler;
+import org.libreblog.rss.core.SourceCrawler;
 import org.libreblog.rss.utils.ExtraOptions;
 import org.libreblog.rss.utils.Utils;
 
@@ -50,12 +51,19 @@ public class FragmentMoreOptions extends Fragment {
                                     source.name = outline.text != null && !outline.text.isEmpty() ? outline.text : outline.title;
                                     if (source.name == null || source.name.isEmpty())
                                         source.name = getString(R.string.someone);
-                                    source.title = outline.title != null && !outline.title.isEmpty() ? source.title : source.name;
+                                    source.title = outline.title != null && !outline.title.isEmpty() ? outline.title : source.name;
                                     source.score = outline.score;
-                                    if (outline.imageUrl != null && !outline.imageUrl.isEmpty())
+                                    source.description = outline.description;
+                                    source.type = outline.type;
+                                    if (outline.imageUrl != null && !outline.imageUrl.isEmpty()) {
                                         source.image = outline.imageUrl;
+                                    }
+                                    if (outline.preferredImageUrl != null && !outline.preferredImageUrl.isEmpty()) {
+                                        source.preferredImage = outline.preferredImageUrl;
+                                    }
                                     if (source.id != null && source.id.startsWith("http")) {
                                         db.putSource(source);
+                                        new SourceCrawler(getContext(), null).refreshSource(source.id);
                                     }
                                 }
                             }

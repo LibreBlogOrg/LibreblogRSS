@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class RssHandler {
+public class RssArticleHandler {
     public static final int MAX_ARTICLE_TITLE_LENGTH = 500;
     public static final int MAX_ARTICLE_DESCRIPTION_LENGTH = 10_000;
     public static final int MAX_CLEANED_DESCRIPTION_LENGTH = 500;
@@ -162,7 +162,7 @@ public class RssHandler {
         values.put(DbHandler.ARTICLES_OPENED_COL, 0);
         values.put(DbHandler.ARTICLES_DISPLAYED_COL, 0);
         values.put(DbHandler.ARTICLES_HIDDEN_COL, 0);
-        article.score = ArticlesSorter.getScore(article);
+        article.score = ArticleSorter.getScore(article);
         values.put(DbHandler.ARTICLES_SCORE_COL, article.score);
         return values;
     }

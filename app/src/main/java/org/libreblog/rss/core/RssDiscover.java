@@ -30,6 +30,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.libreblog.rss.utils.FeedCallback;
 import org.libreblog.rss.utils.Utils;
 
 import java.io.IOException;
@@ -48,7 +49,7 @@ public final class RssDiscover {
     private static final Executor EXEC = Executors.newSingleThreadExecutor();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
-    public static void discover(Context context, final String urlString, String choosenImage, final Callback cb) {
+    public static void discover(Context context, final String urlString, final FeedCallback cb) {
         EXEC.execute(() -> {
             try {
                 boolean differentUrl = false;
@@ -85,18 +86,7 @@ public final class RssDiscover {
                     return;
                 }
 
-                if (choosenImage == null || choosenImage.isEmpty()) {
-                    useBestIcon(context, feed, differentUrl ? urlString : null, cb);
-                } else {
-                    SyndImage syndImage = new SyndImageImpl();
-                    syndImage.setUrl(choosenImage);
-                    feed.setIcon(syndImage);
-
-                    final SyndFeed result = feed;
-                    MAIN.post(() -> {
-                        if (cb != null) cb.onResult(result);
-                    });
-                }
+                useBestIcon(context, feed, differentUrl ? urlString : null, cb);
             } catch (Exception e) {
                 Log.w("RssDiscover", "Cannot find RSS", e);
                 MAIN.post(() -> {
@@ -106,7 +96,7 @@ public final class RssDiscover {
         });
     }
 
-    private static void useBestIcon(Context context, final SyndFeed feed, String originalUrl, final Callback cb) {
+    private static void useBestIcon(Context context, final SyndFeed feed, String originalUrl, final FeedCallback cb) {
         List<Img> imgs = new ArrayList<>();
         List<Img> originalUrlImgs = new ArrayList<>();
         List<Img> alternateImgs = new ArrayList<>();
@@ -388,12 +378,6 @@ public final class RssDiscover {
         if (href != null) imgs.add(new Img(href, 2));
 
         return imgs;
-    }
-
-    public interface Callback {
-        void onResult(SyndFeed feed);
-
-        void onError(Exception e);
     }
 
     public static class Img {

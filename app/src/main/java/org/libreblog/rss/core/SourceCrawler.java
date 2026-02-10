@@ -30,13 +30,16 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 
+import org.json.JSONObject;
 import org.libreblog.rss.utils.Settings;
 
 import java.util.List;
+import java.util.Objects;
 
 public class SourceCrawler {
     public static final int ONE_MINUTE = 60000;
     public static final int TIME_TO_REFRESH_SOURCE = 5 * ONE_MINUTE;
+    public static final int TIME_TO_REFRESH_ACTIVITY_PUB_PROFILE = 30 * ONE_MINUTE;
     public static final int TIME_TO_REFRESH = 2 * ONE_MINUTE;
     private static final LanguageDetector languageDetector = LanguageDetectorBuilder.fromLanguages(ENGLISH, FRENCH,
             GERMAN, SPANISH, CHINESE, ARABIC, PORTUGUESE, RUSSIAN, JAPANESE, KOREAN, ITALIAN,
@@ -73,9 +76,25 @@ public class SourceCrawler {
         return "en";
     }
 
+    private SyndFeed buildFeed(DbHandler.Source source) throws Exception {
+        if (Objects.equals(source.type, DbHandler.SOURCE_TYPE_RSS)) {
+            SyndFeedInput input = new SyndFeedInput();
+            return input.build(new XmlReader(RssDiscover.getURLConnection(source.id)));
+        } else if (Objects.equals(source.type, DbHandler.SOURCE_TYPE_ACTIVITY_PUB)) {
+            JSONObject outbox;
+            if (source.refreshed + TIME_TO_REFRESH_ACTIVITY_PUB_PROFILE < System.currentTimeMillis()) {
+                outbox = ActivityPubHandler.findOutbox(source.id, source,0);
+            } else {
+                outbox = ActivityPubHandler.findOutbox(source.link, source,0);
+            }
+            return ActivityPubHandler.convertOutboxJsonToSyndFeed(source, outbox);
+        }
+
+        throw new RuntimeException("Unrecognized source type");
+    }
+
     public void refresh(Context context) {
         List<DbHandler.Source> sources = db.getSources();
-        SyndFeedInput input = new SyndFeedInput();
 
         int[] count = {0};
         int pos = sources.size() - 1;
@@ -93,7 +112,7 @@ public class SourceCrawler {
 
             Thread thread = new Thread(() -> {
                 try {
-                    SyndFeed feed = input.build(new XmlReader(RssDiscover.getURLConnection(source.id)));
+                    SyndFeed feed = buildFeed(source);
                     updateSource(feed, source);
                     long ts = System.currentTimeMillis();
 
@@ -109,7 +128,7 @@ public class SourceCrawler {
 
                 count[0]++;
                 if (count[0] == sources.size()) {
-                    ArticlesSorter.sort(context);
+                    ArticleSorter.sort(context);
                     updateLastRefresh(context);
                     if (onRefreshListener != null) onRefreshListener.onRefresh();
                 }
@@ -120,11 +139,10 @@ public class SourceCrawler {
 
     public void refreshSource(String sourceId) {
         DbHandler.Source source = db.getSource(sourceId);
-        SyndFeedInput input = new SyndFeedInput();
 
         Thread thread = new Thread(() -> {
             try {
-                SyndFeed feed = input.build(new XmlReader(RssDiscover.getURLConnection(source.id)));
+                SyndFeed feed = buildFeed(source);
                 updateSource(feed, source);
                 long ts = System.currentTimeMillis();
 
@@ -146,12 +164,10 @@ public class SourceCrawler {
 
         StringBuilder detectLanguageOf = new StringBuilder();
 
-        if (source.image == null || source.image.isEmpty()) {
-            if (feed.getIcon() != null) {
-                db.setSourceImage(source.id, feed.getIcon().getUrl());
-            } else if (feed.getImage() != null) {
-                db.setSourceImage(source.id, feed.getImage().getUrl());
-            }
+        if (feed.getIcon() != null) {
+            db.setSourceImage(source.id, feed.getIcon().getUrl());
+        } else if (feed.getImage() != null) {
+            db.setSourceImage(source.id, feed.getImage().getUrl());
         }
 
         String title = feed.getTitle();

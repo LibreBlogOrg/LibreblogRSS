@@ -12,8 +12,8 @@ android {
         applicationId "org.libreblog.rss"
         minSdk 28
         targetSdk 36
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.1.0"
     }
 
     buildTypes {
@@ -33,13 +33,19 @@ android {
     }
 }
 
+tasks.register('printVersion') {
+    doLast {
+        println android.defaultConfig.versionName
+    }
+}
+
 dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity
     implementation libs.constraintlayout
     implementation libs.recyclerview
-    // other libraries
+    implementation libs.okhttp
     implementation libs.rome
     implementation libs.rome.modules
     implementation libs.lingua
@@ -53,4 +59,5 @@ dependencies {
     implementation libs.media3.exoplayer.dash
     implementation libs.media3.ui
     implementation libs.media3.ui.compose
+    implementation libs.emoji.java
 }

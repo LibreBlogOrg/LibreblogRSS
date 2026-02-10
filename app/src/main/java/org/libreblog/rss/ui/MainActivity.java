@@ -19,7 +19,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.media3.common.util.UnstableApi;
 
 import org.libreblog.rss.R;
-import org.libreblog.rss.core.ArticlesSorter;
+import org.libreblog.rss.core.ActivityPubHandler;
+import org.libreblog.rss.core.ArticleSorter;
 import org.libreblog.rss.core.DbHandler;
 import org.libreblog.rss.core.MediaHandler;
 import org.libreblog.rss.core.SourceCrawler;
@@ -59,8 +60,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 ImageButton homeButton = requireViewById(HOME_BUTTON_ID);
                 onRefreshListener = () -> FragmentMain.changeHomeIcon(homeButton);
-            } catch (Exception ignore) {
-            }
+            } catch (Exception ignore) {}
 
             new SourceCrawler(context, onRefreshListener).refresh(context);
         }
@@ -69,7 +69,8 @@ public class MainActivity extends AppCompatActivity {
     @OptIn(markerClass = UnstableApi.class)
     private void prepareApp() {
         Context context = getApplicationContext();
-        ArticlesSorter.init(context);
+        ActivityPubHandler.setRepostedItem(getString(R.string.reposted_item));
+        ArticleSorter.init(context);
         MediaHandler.init(context);
         TermFrequency.setStopwords(getResources().openRawResource(R.raw.stopwords));
 

@@ -2,11 +2,12 @@ package org.libreblog.rss.ui;
 
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
-import static org.libreblog.rss.core.DbHandler.SOURCES_IMAGE_COL;
 import static org.libreblog.rss.core.DbHandler.SOURCES_NAME_COL;
+import static org.libreblog.rss.core.DbHandler.SOURCES_PREFERRED_IMAGE_COL;
 import static org.libreblog.rss.core.RssDiscover.DEFAULT_TIMEOUT;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -28,10 +29,13 @@ import androidx.fragment.app.FragmentManager;
 
 import com.rometools.rome.feed.synd.SyndFeed;
 
+import org.json.JSONObject;
 import org.libreblog.rss.R;
+import org.libreblog.rss.core.ActivityPubHandler;
 import org.libreblog.rss.core.DbHandler;
 import org.libreblog.rss.core.RssDiscover;
 import org.libreblog.rss.core.SourceCrawler;
+import org.libreblog.rss.utils.FeedCallback;
 import org.libreblog.rss.utils.Settings;
 import org.libreblog.rss.utils.Utils;
 
@@ -42,7 +46,7 @@ import java.util.TimerTask;
 
 public class FragmentAddSource extends Fragment {
     private DbHandler db;
-    private EditText id, name, image;
+    private EditText id, name, preferredImage;
 
     public FragmentAddSource() {
         super(R.layout.fragment_add_source);
@@ -57,7 +61,7 @@ public class FragmentAddSource extends Fragment {
         db = new DbHandler(getContext());
         id = requireActivity().findViewById(R.id.edit_id);
         name = requireActivity().findViewById(R.id.edit_name);
-        image = requireActivity().findViewById(R.id.edit_image);
+        preferredImage = requireActivity().findViewById(R.id.edit_preferred_image);
 
         Button save = requireActivity().findViewById(R.id.add_button);
         Button cancel = requireActivity().findViewById(R.id.cancel_button);
@@ -81,15 +85,18 @@ public class FragmentAddSource extends Fragment {
 
             if (args.containsKey("id")) {
                 id.setText(args.getString("id"));
-                id.setEnabled(false);
+                id.setKeyListener(null);
+                id.setCursorVisible(false);
+                id.setTextIsSelectable(true);
+                id.setTextColor(Color.rgb(106, 106,106));
             }
 
             if (args.containsKey("name")) {
                 name.setText(args.getString("name"));
             }
 
-            if (args.containsKey("image")) {
-                image.setText(args.getString("image"));
+            if (args.containsKey("preferred_image")) {
+                preferredImage.setText(args.getString("preferred_image"));
             }
         } else {
             final boolean[] loading = {false};
@@ -119,16 +126,15 @@ public class FragmentAddSource extends Fragment {
             return;
         }
 
-        String imageUrl = image.getText().toString();
-        if (!imageUrl.isEmpty() && !URLUtil.isValidUrl(imageUrl)) {
+        String preferredImageUrl = preferredImage.getText().toString();
+        if (!preferredImageUrl.isEmpty() && !URLUtil.isValidUrl(preferredImageUrl)) {
             Toast.makeText(getContext(), R.string.invalid_image_url, Toast.LENGTH_SHORT).show();
             return;
         }
 
         ContentValues values = new ContentValues();
         values.put(SOURCES_NAME_COL, name.getText().toString());
-        String img = image.getText().toString();
-        if (!img.isEmpty()) values.put(SOURCES_IMAGE_COL, img);
+        values.put(SOURCES_PREFERRED_IMAGE_COL, preferredImageUrl);
 
         db.updateSource(id.getText().toString(), values);
         exit();
@@ -140,11 +146,15 @@ public class FragmentAddSource extends Fragment {
         DbHandler.Source source = new DbHandler.Source();
         source.id = id.getText().toString().trim();
         source.name = name.getText().toString().trim();
-        source.type = DbHandler.SOURCE_TYPE_RSS;
-        source.image = image.getText().toString().trim();
+        source.preferredImage = preferredImage.getText().toString().trim();
 
         if (source.name.isEmpty()) {
             Toast.makeText(getContext(), R.string.choose_a_name, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (source.id.isEmpty()) {
+            Toast.makeText(getContext(), R.string.enter_a_url, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -163,46 +173,74 @@ public class FragmentAddSource extends Fragment {
             }
         }
 
-        RssDiscover.Callback cb = getNewSourceCallback(source, loading, pBar, save);
-        if (source.image != null && !source.image.isEmpty()) {
-            if (!URLUtil.isValidUrl(source.image)) {
-                Toast.makeText(getContext(), R.string.invalid_image_url, Toast.LENGTH_SHORT).show();
-                return;
-            }
+        if (source.preferredImage != null && !source.preferredImage.isEmpty()
+                && !URLUtil.isValidUrl(source.preferredImage)) {
+            Toast.makeText(getContext(), R.string.invalid_image_url, Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            save.setBackgroundColor(Color.LTGRAY);
-            pBar.setVisibility(VISIBLE);
-            loading[0] = true;
+        FeedCallback feedCb = getNewSourceCallback(source, loading, pBar, save);
+        save.setBackgroundColor(Color.LTGRAY);
+        pBar.setVisibility(VISIBLE);
+        loading[0] = true;
+
+        if (source.preferredImage != null && !source.preferredImage.isEmpty()) {
             new Thread(() -> {
-                boolean ok = Utils.isRemoteImageUrl(source.image, DEFAULT_TIMEOUT);
-                if (!ok) source.image = "";
-                RssDiscover.discover(getContext(), source.id, source.image, cb);
+                boolean ok = Utils.isRemoteImageUrl(source.preferredImage, DEFAULT_TIMEOUT);
+                if (!ok) source.preferredImage = null;
+                discoverAPubOrRss(getContext(), source, feedCb);
             }).start();
         } else {
-            save.setBackgroundColor(Color.LTGRAY);
-            pBar.setVisibility(VISIBLE);
-            loading[0] = true;
-            RssDiscover.discover(getContext(), source.id, null, cb);
+            new Thread(() -> discoverAPubOrRss(getContext(), source, feedCb)).start();
         }
 
         makeLastRefreshZero();
     }
 
-    private RssDiscover.Callback getNewSourceCallback(DbHandler.Source source, boolean[] loading, ProgressBar pBar, Button save) {
-        return new RssDiscover.Callback() {
+    private void discoverAPubOrRss(Context context, DbHandler.Source source, FeedCallback feedCb) {
+        try {
+            JSONObject outbox = ActivityPubHandler.findOutbox(source.id, source,0);
+            SyndFeed feed = ActivityPubHandler.convertOutboxJsonToSyndFeed(source, outbox);
+            feedCb.onResult(feed);
+        } catch (Exception e) {
+            source.type = DbHandler.SOURCE_TYPE_RSS;
+            RssDiscover.discover(context, source.id, feedCb);
+        }
+    }
+
+    private FeedCallback getNewSourceCallback(DbHandler.Source source, boolean[] loading,
+                                              ProgressBar pBar, Button save) {
+        return new FeedCallback() {
             @Override
             public void onResult(SyndFeed feed) {
-                if (feed != null) {
-                    source.id = feed.getLink();
-                    if (source.image == null || source.image.isEmpty()) {
+                if (feed != null && feed.getLink() != null) {
+                    if (Objects.equals(source.type, DbHandler.SOURCE_TYPE_RSS)) {
+                        source.id = feed.getLink();
+                        String description = feed.getDescription();
+                        if (description != null) source.description = description.trim();
+                        String title = feed.getTitle();
+                        if (title != null) source.title = title.trim();
                         if (feed.getIcon() != null) {
                             source.image = feed.getIcon().getUrl();
                         } else if (feed.getImage() != null) {
                             source.image = feed.getImage().getUrl();
                         }
                     }
-                    db.putSource(source);
-                    new SourceCrawler(getContext(), null).refreshSource(source.id);
+
+                    boolean isNew = true;
+                    List<DbHandler.Source> sources = db.getSources();
+                    for (DbHandler.Source s : sources) {
+                        if (Objects.equals(s.id, source.id)) {
+                            isNew = false;
+                            break;
+                        }
+                    }
+
+                    if (isNew) {
+                        db.putSource(source);
+                        new SourceCrawler(getContext(), null).refreshSource(source.id);
+                    }
+
                     Timer timer = new Timer();
                     timer.schedule(new TimerTask() {
                         @Override

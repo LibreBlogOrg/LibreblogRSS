@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class ArticlesSorter {
+public class ArticleSorter {
     public static final int MIN_DESCRIPTION_LENGTH = 50;
     public static final int GOOD_DESCRIPTION_LENGTH = 150;
     public static final int TOO_MUCH_DESCRIPTION_LENGTH = 1250;

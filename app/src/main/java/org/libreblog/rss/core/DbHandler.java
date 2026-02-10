@@ -12,13 +12,16 @@ import android.database.sqlite.SQLiteOpenHelper;
 import com.rometools.rome.feed.synd.SyndEntry;
 
 import org.libreblog.rss.utils.Settings;
+import org.libreblog.rss.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class DbHandler extends SQLiteOpenHelper {
     public static final String DB_NAME = "reader_db";
-    public static final int DB_VERSION = 38;
+    public static final int DB_VERSION = 39;
 
     //Articles
     public static final String ARTICLES_TABLE_NAME = "articles";
@@ -69,6 +72,7 @@ public class DbHandler extends SQLiteOpenHelper {
 
     //Sources
     public static final String SOURCE_TYPE_RSS = "rss";
+    public static final String SOURCE_TYPE_ACTIVITY_PUB = "activity_pub";
     public static final String SOURCES_TABLE_NAME = "sources";
     public static final String SOURCES_ID_COL = "id";
     public static final String SOURCES_NAME_COL = "name";
@@ -78,6 +82,7 @@ public class DbHandler extends SQLiteOpenHelper {
     public static final String SOURCES_IMAGE_COL = "image";
     public static final String SOURCES_TYPE_COL = "type";
     public static final String SOURCES_LANGUAGE_COL = "language";
+    public static final String SOURCES_PREFERRED_IMAGE_COL = "preferred_image";
     public static final String SOURCES_SCORE_COL = "score";
     public static final String SOURCES_ARTICLES_COL = "articles";
     public static final String SOURCES_LIKES_COL = "likes";
@@ -92,6 +97,7 @@ public class DbHandler extends SQLiteOpenHelper {
             SOURCES_IMAGE_COL,
             SOURCES_TYPE_COL,
             SOURCES_LANGUAGE_COL,
+            SOURCES_PREFERRED_IMAGE_COL,
             SOURCES_SCORE_COL,
             SOURCES_REFRESHED_COL,
             SOURCES_TTL_COL,
@@ -123,6 +129,8 @@ public class DbHandler extends SQLiteOpenHelper {
                 cursor.getColumnIndexOrThrow(SOURCES_TYPE_COL));
         source.language = cursor.getString(
                 cursor.getColumnIndexOrThrow(SOURCES_LANGUAGE_COL));
+        source.preferredImage = cursor.getString(
+                cursor.getColumnIndexOrThrow(SOURCES_PREFERRED_IMAGE_COL));
         source.score = cursor.getDouble(
                 cursor.getColumnIndexOrThrow(SOURCES_SCORE_COL));
         source.refreshed = cursor.getLong(
@@ -173,6 +181,7 @@ public class DbHandler extends SQLiteOpenHelper {
                 + SOURCES_IMAGE_COL + " TEXT,"
                 + SOURCES_TYPE_COL + " TEXT,"
                 + SOURCES_LANGUAGE_COL + " TEXT,"
+                + SOURCES_PREFERRED_IMAGE_COL + " TEXT,"
                 + SOURCES_REFRESHED_COL + " INTEGER,"
                 + SOURCES_TTL_COL + " INTEGER,"
                 + SOURCES_LIKES_COL + " INTEGER,"
@@ -187,7 +196,7 @@ public class DbHandler extends SQLiteOpenHelper {
         if (article == null) return false;
 
         SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = RssHandler.getArticleContentValues(article, source, timestamp, position);
+        ContentValues values = RssArticleHandler.getArticleContentValues(article, source, timestamp, position);
         if (values == null) return false;
 
         long res = db.insertWithOnConflict(
@@ -196,10 +205,36 @@ public class DbHandler extends SQLiteOpenHelper {
                 values,
                 SQLiteDatabase.CONFLICT_IGNORE);
 
-        //db.close();
-        incSourceArticles(source.id);
+        if (res != -1) {
+            incSourceArticles(source.id);
 
-        return (res > -1);
+            String title = (String) values.get(DbHandler.ARTICLES_TITLE_COL);
+            final String description = (String) values.get(DbHandler.ARTICLES_DESCRIPTION_COL);
+            if (Objects.equals(source.type, DbHandler.SOURCE_TYPE_ACTIVITY_PUB) &&
+                    title != null && title.startsWith(ActivityPubHandler.getRepostedItem()) &&
+                    (description == null || description.isEmpty())) {
+                new Thread(() -> {
+                    String id = (String) values.get(DbHandler.ARTICLES_ID_COL);
+                    String link = (String) values.get(DbHandler.ARTICLES_LINK_COL);
+
+                    Map<String, String> metaTags = MetaFetcher.getMetaTagsFromHead(link);
+                    String metaDescription = metaTags.getOrDefault("og:description",
+                            metaTags.getOrDefault("description", null));
+                    if (metaDescription != null) {
+                        metaDescription = metaDescription.replaceAll("\n", "<br>");
+                        metaDescription = Utils.linkifyUrlsToHtml(metaDescription);
+                        updateArticleDescription(id, metaDescription);
+                    }
+
+                    String metaImage = metaTags.getOrDefault("og:image",null);
+                    if (metaImage != null) {
+                        updateArticleImage(id, "[\"" + metaImage + "\"]");
+                    }
+                }).start();
+            }
+        }
+
+        return (res != -1);
     }
 
     public void updateSource(String id, ContentValues values) {
@@ -209,8 +244,6 @@ public class DbHandler extends SQLiteOpenHelper {
         String[] selectionArgs = {id};
 
         db.update(SOURCES_TABLE_NAME, values, selection, selectionArgs);
-
-        //db.close();
     }
 
     public void setSourceImage(String id, String imageUrl) {
@@ -243,6 +276,12 @@ public class DbHandler extends SQLiteOpenHelper {
         updateSource(id, values);
     }
 
+    public void setSourcePreferredImage(String id, String img) {
+        ContentValues values = new ContentValues();
+        values.put(SOURCES_PREFERRED_IMAGE_COL, img);
+        updateSource(id, values);
+    }
+
     public void updateSourceRefreshed(String id) {
         ContentValues values = new ContentValues();
         values.put(DbHandler.SOURCES_REFRESHED_COL, System.currentTimeMillis());
@@ -266,7 +305,6 @@ public class DbHandler extends SQLiteOpenHelper {
         db.execSQL("UPDATE " + SOURCES_TABLE_NAME + " SET " +
                 SOURCES_ARTICLES_COL + " = " + SOURCES_ARTICLES_COL +
                 " + 1 WHERE " + SOURCES_ID_COL + " = '" + sourceId + "'");
-        //db.close();
     }
 
     public void incSourceLikes(String sourceId) {
@@ -274,7 +312,6 @@ public class DbHandler extends SQLiteOpenHelper {
         db.execSQL("UPDATE " + SOURCES_TABLE_NAME + " SET " +
                 SOURCES_LIKES_COL + " = " + SOURCES_LIKES_COL +
                 " + 1 WHERE " + SOURCES_ID_COL + " = '" + sourceId + "'");
-        //db.close();
     }
 
     public void decSourceLikes(String sourceId) {
@@ -282,7 +319,6 @@ public class DbHandler extends SQLiteOpenHelper {
         db.execSQL("UPDATE " + SOURCES_TABLE_NAME + " SET " +
                 SOURCES_LIKES_COL + " = " + SOURCES_LIKES_COL +
                 " - 1 WHERE " + SOURCES_ID_COL + " = '" + sourceId + "'");
-        //db.close();
     }
 
     public void deleteSource(String id) {
@@ -290,7 +326,6 @@ public class DbHandler extends SQLiteOpenHelper {
         String[] whereArgs = {id};
         db.delete(SOURCES_TABLE_NAME, SOURCES_ID_COL + " = ?", whereArgs);
         db.delete(ARTICLES_TABLE_NAME, ARTICLES_SOURCE_COL + " = ?", whereArgs);
-        //db.close();
     }
 
     public void putSource(Source source) {
@@ -307,6 +342,7 @@ public class DbHandler extends SQLiteOpenHelper {
         values.put(SOURCES_IMAGE_COL, source.image);
         values.put(SOURCES_TYPE_COL, source.type);
         values.put(SOURCES_LANGUAGE_COL, source.language);
+        values.put(SOURCES_PREFERRED_IMAGE_COL, source.preferredImage);
         values.put(SOURCES_SCORE_COL, source.score);
         values.put(SOURCES_REFRESHED_COL, source.refreshed);
         values.put(SOURCES_TTL_COL, source.ttl);
@@ -319,7 +355,6 @@ public class DbHandler extends SQLiteOpenHelper {
                 null,
                 values,
                 SQLiteDatabase.CONFLICT_IGNORE);
-        //db.close();
     }
 
     public List<Source> getSources() {
@@ -609,8 +644,6 @@ public class DbHandler extends SQLiteOpenHelper {
         String where = DbHandler.ARTICLES_TIMESTAMP_COL + " < " + when;
 
         db.delete(ARTICLES_TABLE_NAME, where, null);
-
-        //db.close();
     }
 
     public void updateArticle(String id, ContentValues values) {
@@ -620,8 +653,6 @@ public class DbHandler extends SQLiteOpenHelper {
         String[] selectionArgs = {id};
 
         db.update(ARTICLES_TABLE_NAME, values, selection, selectionArgs);
-
-        // db.close();
     }
 
     public void likeArticle(String id, String sourceId) {
@@ -663,6 +694,18 @@ public class DbHandler extends SQLiteOpenHelper {
         updateArticle(id, values);
     }
 
+    public void updateArticleDescription(String id, String description) {
+        ContentValues values = new ContentValues();
+        values.put(DbHandler.ARTICLES_DESCRIPTION_COL, description);
+        updateArticle(id, values);
+    }
+
+    public void updateArticleImage(String id, String image) {
+        ContentValues values = new ContentValues();
+        values.put(DbHandler.ARTICLES_IMAGE_COL, image);
+        updateArticle(id, values);
+    }
+
     public void setArticlesScore(List<DbHandler.Article> articles) {
         if (articles == null) return;
         SQLiteDatabase db = this.getWritableDatabase();
@@ -675,8 +718,6 @@ public class DbHandler extends SQLiteOpenHelper {
 
             db.update(ARTICLES_TABLE_NAME, values, selection, selectionArgs);
         }
-
-        //db.close();
     }
 
     @Override
@@ -720,6 +761,7 @@ public class DbHandler extends SQLiteOpenHelper {
         public String description;
         public String language = "en";
         public String image;
+        public String preferredImage;
         public String type;
         public double score = 2.5;
         public int articles = 0;

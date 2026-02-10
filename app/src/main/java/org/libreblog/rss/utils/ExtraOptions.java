@@ -10,8 +10,15 @@ import android.widget.Toast;
 import org.libreblog.rss.R;
 
 public class ExtraOptions {
+    public static final boolean IS_APP_AVAILABLE_ON_APP_STORES = false;
+
     public static void openAppRating(View view) {
         if (view == null) return;
+
+        if (!IS_APP_AVAILABLE_ON_APP_STORES) {
+            Toast.makeText(view.getContext(), R.string.app_not_listed, Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         Context context = view.getContext();
         final String packageName = context.getPackageName();

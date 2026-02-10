@@ -3,6 +3,7 @@ package org.libreblog.rss.utils;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.util.Log;
+import android.util.Patterns;
 import android.webkit.URLUtil;
 
 import org.json.JSONArray;
@@ -21,8 +22,13 @@ import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.security.MessageDigest;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -324,5 +330,55 @@ public class Utils {
         }
 
         return null;
+    }
+
+    public static String convertIsoToRfc1123(String isoInstant) {
+        Instant instant = Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoInstant));
+        return DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.ENGLISH)
+                .format(ZonedDateTime.ofInstant(instant, ZoneId.of("GMT")));
+    }
+
+    public static String escapeForXml(String text) {
+        if (text == null) return null;
+
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
+    }
+
+    public static String linkifyUrlsToHtml(String text) {
+        if (text == null) return null;
+
+        Pattern urlPattern = Patterns.WEB_URL;
+        Matcher m = urlPattern.matcher(text);
+        StringBuilder sb = new StringBuilder();
+        int lastEnd = 0;
+        while (m.find()) {
+            String url = m.group();
+            int start = m.start();
+            sb.append(text, lastEnd, start);
+
+            // skip if already inside an <a>
+            if (start > 0) {
+                int lastOpen = text.lastIndexOf("<a", start);
+                int lastClose = text.lastIndexOf("</a>", start);
+                if (lastOpen > lastClose) {
+                    sb.append(url);
+                    lastEnd = m.end();
+                    continue;
+                }
+            }
+
+            String href = url.startsWith("www.") ? "http://" + url : url;
+            String safeHref = href.replace("\"", "%22");
+            String safeText = url.replace("<", "&lt;").replace(">", "&gt;");
+            sb.append("<a href=\"").append(safeHref).append("\">").append(safeText).append("</a>");
+            lastEnd = m.end();
+        }
+
+        sb.append(text, lastEnd, text.length());
+        return sb.toString();
     }
 }

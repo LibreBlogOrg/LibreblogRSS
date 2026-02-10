@@ -1,6 +1,6 @@
 package org.libreblog.rss.ui;
 
-import static org.libreblog.rss.core.ArticlesSorter.NBR_STARS;
+import static org.libreblog.rss.core.ArticleSorter.NBR_STARS;
 import static org.libreblog.rss.core.FeedMaker.DOG_VIEW_ID;
 import static org.libreblog.rss.core.SourceCrawler.TIME_TO_REFRESH;
 import static org.libreblog.rss.ui.FragmentSettings.ARTICLES_BY_PAGE_REFRESH;
@@ -42,6 +42,7 @@ import androidx.fragment.app.FragmentManager;
 
 import org.libreblog.rss.R;
 import org.libreblog.rss.core.DbHandler;
+import org.libreblog.rss.core.EmojiHandler;
 import org.libreblog.rss.core.FeedMaker;
 import org.libreblog.rss.core.SourceCrawler;
 import org.libreblog.rss.proxy.GlideApp;
@@ -69,9 +70,13 @@ public class FragmentMain extends Fragment {
 
     private static TextView createDescriptionTv(DbHandler.Source source, Context context, float density) {
         TextView descriptionTv = new TextView(context);
-        Spanned spanned = Html.fromHtml(source.description, Html.FROM_HTML_MODE_LEGACY);
+        String description = EmojiHandler.replaceEmojiShortcodes(source.description, source.id);
+        Html.ImageGetter ig = EmojiHandler.getImageGetter(context, descriptionTv, 2);
+        Spanned spanned = Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT, ig, null);
         Spannable spannable = new SpannableString(spanned);
         descriptionTv.setText(spannable);
+        FeedMaker.makeTextViewExpandableAndClickable(descriptionTv, spannable, spanned);
+
         descriptionTv.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -88,7 +93,7 @@ public class FragmentMain extends Fragment {
         return descriptionTv;
     }
 
-    private static RelativeLayout getHeaderPlusMore(Context context, LinearLayout header, ImageButton moreBt) {
+    private static RelativeLayout createSourceCardHeaderPlusMore(Context context, LinearLayout header, ImageButton moreBt) {
         RelativeLayout headerPlusMore = new RelativeLayout(context);
         headerPlusMore.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -104,7 +109,7 @@ public class FragmentMain extends Fragment {
         return headerPlusMore;
     }
 
-    private static LinearLayout createHeader(DbHandler.Source source, Context context, int profileSizePx, float density) {
+    private static LinearLayout createSourceCardHeader(DbHandler.Source source, Context context, int profileSizePx, float density) {
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setLayoutParams(new LinearLayout.LayoutParams(
@@ -118,7 +123,8 @@ public class FragmentMain extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        if (source.image != null && !source.image.isEmpty()) {
+        String sourceImage = source.preferredImage != null && !source.preferredImage.isEmpty() ? source.preferredImage : source.image;
+        if (sourceImage != null && !sourceImage.isEmpty()) {
             ImageView profile = new ImageView(context);
             LinearLayout.LayoutParams profileLp = new LinearLayout.LayoutParams(profileSizePx, profileSizePx);
             profileLp.setMargins(0, 0, (int) (10 * density), 0);
@@ -126,12 +132,17 @@ public class FragmentMain extends Fragment {
             profile.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
             if (context != null)
-                GlideApp.with(context).load(source.image).circleCrop().into(profile);
+                GlideApp.with(context).load(sourceImage).circleCrop().into(profile);
             header.addView(profile);
         }
 
         TextView titleTv = new TextView(context);
-        titleTv.setText(source.title != null && !source.title.isEmpty() ? source.title : source.name);
+        String title = source.title != null && !source.title.isEmpty() ? source.title : source.name;
+        title = EmojiHandler.replaceEmojiShortcodes(title, source.id);
+        Html.ImageGetter ig = EmojiHandler.getImageGetter(context, titleTv, 4);
+        Spanned spanned = Html.fromHtml(title, Html.FROM_HTML_MODE_COMPACT, ig, null);
+        Spannable spannable = new SpannableString(spanned);
+        titleTv.setText(spannable);
         titleTv.setTextSize(21);
         titleTv.setEllipsize(TextUtils.TruncateAt.END);
         titleTv.setMaxLines(1);
@@ -141,7 +152,11 @@ public class FragmentMain extends Fragment {
 
         if (source.title != null && !source.title.isEmpty()) {
             TextView nameTv = new TextView(context);
-            nameTv.setText(source.name);
+            String name = EmojiHandler.replaceEmojiShortcodes(source.name, source.id);
+            Html.ImageGetter ig2 = EmojiHandler.getImageGetter(context, nameTv, 3);
+            Spanned spanned2 = Html.fromHtml(name, Html.FROM_HTML_MODE_COMPACT, ig2, null);
+            Spannable spannable2 = new SpannableString(spanned2);
+            nameTv.setText(spannable2);
             nameTv.setTextSize(18);
             nameTv.setEllipsize(TextUtils.TruncateAt.END);
             nameTv.setMaxLines(1);
@@ -216,7 +231,8 @@ public class FragmentMain extends Fragment {
 
         List<DbHandler.Source> sources = db.getSources();
         for (DbHandler.Source s : sources) {
-            if (s.image != null && !s.image.isEmpty()) {
+            String sImage = s.preferredImage != null && !s.preferredImage.isEmpty() ? s.preferredImage : s.image;
+            if (sImage != null && !sImage.isEmpty()) {
                 ImageButton button = new ImageButton(getContext());
                 button.setOnClickListener(v -> showFeed(s, false, false, null));
                 button.setOnLongClickListener(v -> openDeleteDialog(s));
@@ -228,12 +244,12 @@ public class FragmentMain extends Fragment {
                 gd.setStroke(1, Color.rgb(240, 240, 240));
                 button.setBackground(gd);
 
-                if (Utils.isSvg(s.image)) {
+                if (Utils.isSvg(sImage)) {
                     button.setPadding(paddingForSvg, paddingForSvg, paddingForSvg, paddingForSvg);
-                    GlideApp.with(getContext()).load(s.image).into(button);
+                    GlideApp.with(getContext()).load(sImage).into(button);
                 } else {
                     button.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                    GlideApp.with(getContext()).load(s.image).circleCrop().into(button);
+                    GlideApp.with(getContext()).load(sImage).circleCrop().into(button);
                 }
                 sourcesCarousel.addView(button);
             } else {
@@ -419,9 +435,9 @@ public class FragmentMain extends Fragment {
         card.setLayoutParams(params);
         card.setPadding(padding, padding, padding, padding);
 
-        LinearLayout header = createHeader(source, context, profileSizePx, density);
+        LinearLayout header = createSourceCardHeader(source, context, profileSizePx, density);
         ImageButton moreBt = getMoreButton(source, onlyHidden, context, card);
-        RelativeLayout headerPlusMore = getHeaderPlusMore(context, header, moreBt);
+        RelativeLayout headerPlusMore = createSourceCardHeaderPlusMore(context, header, moreBt);
         card.addView(headerPlusMore);
 
         if (source.description != null && !source.description.isEmpty()) {
@@ -436,16 +452,16 @@ public class FragmentMain extends Fragment {
     }
 
     private LinearLayout getRatingLayout(DbHandler.Source source, Context context) {
-        LinearLayout ratingLayout1 = new LinearLayout(context);
-        ratingLayout1.setOrientation(LinearLayout.HORIZONTAL);
-        ratingLayout1.setGravity(Gravity.CENTER_HORIZONTAL);
-        ratingLayout1.setLayoutParams(new LinearLayout.LayoutParams(
+        LinearLayout ratingLayoutContainer = new LinearLayout(context);
+        ratingLayoutContainer.setOrientation(LinearLayout.HORIZONTAL);
+        ratingLayoutContainer.setGravity(Gravity.CENTER_HORIZONTAL);
+        ratingLayoutContainer.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        LinearLayout ratingLayout2 = new LinearLayout(context);
-        ratingLayout2.setOrientation(LinearLayout.HORIZONTAL);
-        ratingLayout2.setLayoutParams(new LinearLayout.LayoutParams(
+        LinearLayout ratingLayout = new LinearLayout(context);
+        ratingLayout.setOrientation(LinearLayout.HORIZONTAL);
+        ratingLayout.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -457,9 +473,9 @@ public class FragmentMain extends Fragment {
             source.score = r;
         });
 
-        ratingLayout2.addView(ratingBar);
-        ratingLayout1.addView(ratingLayout2);
-        return ratingLayout1;
+        ratingLayout.addView(ratingBar);
+        ratingLayoutContainer.addView(ratingLayout);
+        return ratingLayoutContainer;
     }
 
     private ImageButton getMoreButton(DbHandler.Source source, boolean onlyHidden, Context context, LinearLayout card) {
@@ -481,7 +497,7 @@ public class FragmentMain extends Fragment {
                     Bundle args = new Bundle();
                     args.putString("id", source.id);
                     args.putString("name", source.name);
-                    args.putString("image", source.image);
+                    args.putString("preferred_image", source.preferredImage);
                     FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
                     fragmentManager.beginTransaction()
                             .replace(R.id.fragment_container_view, FragmentAddSource.class, args)

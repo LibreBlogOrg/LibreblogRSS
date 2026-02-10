@@ -98,7 +98,7 @@ public class FeedMaker {
             String sourceImage = null;
             String sourceName = context.getString(R.string.someone);
             if (s != null) {
-                sourceImage = s.image;
+                sourceImage = s.preferredImage != null && !s.preferredImage.isEmpty() ? s.preferredImage : s.image;
                 sourceName = s.name;
             }
 
@@ -289,7 +289,10 @@ public class FeedMaker {
         return moreBt;
     }
 
-    private static LinearLayout createHeader(FragmentMain fragmentMain, String profileImageUrl, String sourceName, DbHandler.Source source, String timeAgo, Context context, int profileSizePx, float density, boolean isDarkTheme) {
+    private static LinearLayout createHeader(FragmentMain fragmentMain, String profileImageUrl,
+                                             String sourceName, DbHandler.Source source, String timeAgo,
+                                             Context context, int profileSizePx, float density,
+                                             boolean isDarkTheme) {
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setLayoutParams(new LinearLayout.LayoutParams(
@@ -321,13 +324,16 @@ public class FeedMaker {
                 ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView sourceTv = new TextView(context);
-        sourceTv.setText(sourceName);
+        sourceName = EmojiHandler.replaceEmojiShortcodes(sourceName, source.id);
+        Html.ImageGetter ig = EmojiHandler.getImageGetter(context, sourceTv, 3);
+        Spanned spanned = Html.fromHtml(sourceName, Html.FROM_HTML_MODE_COMPACT, ig, null);
+        Spannable spannable = new SpannableString(spanned);
+        sourceTv.setText(spannable);
         sourceTv.setMaxLines(1);
         sourceTv.setEllipsize(TextUtils.TruncateAt.END);
         sourceTv.setPadding(0, 0, 45, 0);
-        sourceTv.setOnClickListener(v -> {
-            if (source != null) fragmentMain.showFeed(source, false, false, null);
-        });
+        sourceTv.setOnClickListener(v ->
+                fragmentMain.showFeed(source, false, false, null));
         sourceTv.setTypeface(Typeface.DEFAULT_BOLD);
         sourceTv.setTextSize(17);
 
@@ -545,24 +551,37 @@ public class FeedMaker {
         return actionRow;
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private static TextView createTitleTv(String text, DbHandler.Article article, Context context, float density) {
         TextView titleTv = new TextView(context);
-        Spanned spanned = Html.fromHtml(text, Html.FROM_HTML_MODE_LEGACY);
+        text = EmojiHandler.replaceEmojiShortcodes(text, article.link);
+        Html.ImageGetter ig = EmojiHandler.getImageGetter(context, titleTv, 2);
+        Spanned spanned = Html.fromHtml(text, Html.FROM_HTML_MODE_COMPACT, ig, null);
         Spannable spannable = new SpannableString(spanned);
 
         titleTv.setText(spannable);
         titleTv.setMaxLines(spanned.length() > 150 ? ARTICLES_INITIAL_LINE_COUNT : ARTICLES_INITIAL_LINE_COUNT_2);
         titleTv.setEllipsize(TextUtils.TruncateAt.END);
 
+        makeTextViewExpandableAndClickable(titleTv, spannable, spanned);
+        titleTv.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        titleTv.setPadding(0, (int) (6 * density), 0, (int) (6 * density));
+        titleTv.setTextSize(16);
+        if (article.hidden == 1) titleTv.setTypeface(titleTv.getTypeface(), Typeface.ITALIC);
+        return titleTv;
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public static void makeTextViewExpandableAndClickable(TextView textView, Spannable spannable, Spanned spanned) {
         final boolean[] expanded = {false};
-        titleTv.setOnTouchListener(new View.OnTouchListener() {
-            private final int TOUCH_SLOP = ViewConfiguration.get(titleTv.getContext()).getScaledTouchSlop();
+        textView.setOnTouchListener(new View.OnTouchListener() {
+            private final int TOUCH_SLOP = ViewConfiguration.get(textView.getContext()).getScaledTouchSlop();
             private final int TAP_TIMEOUT = ViewConfiguration.getTapTimeout() * 2;
             private float downX, downY;
             private long downTime;
 
-            //AI comments kept for clarity (maybe)
+            //AI comments kept for clarity
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event == null) return false;
@@ -588,17 +607,17 @@ public class FeedMaker {
                                 Math.abs(upX - downX) <= TOUCH_SLOP &&
                                 Math.abs(upY - downY) <= TOUCH_SLOP) {
                             // It's a click
-                            Layout layout = titleTv.getLayout();
+                            Layout layout = textView.getLayout();
                             int line = layout.getLineForVertical((int) upY);
                             int off = layout.getOffsetForHorizontal(line, (int) upX);
 
                             ClickableSpan[] link = spannable.getSpans(off, off, ClickableSpan.class);
 
                             if (link.length > 0) {
-                                link[0].onClick(titleTv);
+                                link[0].onClick(textView);
                             } else {
                                 expanded[0] = !expanded[0];
-                                titleTv.setMaxLines(expanded[0] ? Integer.MAX_VALUE :
+                                textView.setMaxLines(expanded[0] ? Integer.MAX_VALUE :
                                         (spanned.length() > 150 ? ARTICLES_INITIAL_LINE_COUNT :
                                                 ARTICLES_INITIAL_LINE_COUNT_2));
                                 return true;
@@ -615,13 +634,6 @@ public class FeedMaker {
 
 
         });
-        titleTv.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-        titleTv.setPadding(0, (int) (6 * density), 0, (int) (6 * density));
-        titleTv.setTextSize(16);
-        if (article.hidden == 1) titleTv.setTypeface(titleTv.getTypeface(), Typeface.ITALIC);
-        return titleTv;
     }
 
     private static void openLink(Context context, String uriString) {

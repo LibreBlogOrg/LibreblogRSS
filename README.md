@@ -4,7 +4,7 @@
 
 *A simple Android RSS reader that feels like a social timeline — supports multimedia, .onion sites, and works well with non-monopolistic platforms (Mastodon, Substack, etc.).*
 
-[![Download APK](https://badgen.net/badge/Download/APK/green?icon=java)](https://github.com/LibreBlogOrg/LibreblogRSS/actions/runs/20691366809/artifacts/5017138749)
+[![Download APK](https://badgen.net/badge/Download/APK/green?icon=java)](https://github.com/LibreBlogOrg/LibreblogRSS/releases)
 [![Changelog](https://badgen.net/badge/CHANGE/LOG/red)](https://github.com/LibreBlogOrg/LibreblogRSS/blob/main/CHANGELOG.md)
 
 <hr/>
@@ -43,10 +43,3 @@ To make static sites built with this [Editor](https://github.com/LibreBlogOrg/Li
 ## Who is this app for?
 
 For people done with social platforms who still want to follow things they find interesting.
-
-## Installation
-
-- Go to [Actions](https://github.com/LibreBlogOrg/LibreblogRSS/actions).
-- Open the most recent "Build Android APK".
-- Download the artifact "LibreblogRSS-APK".
-- Install the APK on an Android phone.

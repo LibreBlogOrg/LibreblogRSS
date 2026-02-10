@@ -15,6 +15,7 @@
     <string name="import_opml">Import (OPML)</string>
     <string name="export_opml">Export (OPML)</string>
     <string name="rate_app">Rate App</string>
+    <string name="app_not_listed">Maybe in the future</string>
     <string name="about">About Us</string>
     <string name="close_settings">Close settings</string>
     <string name="settings_title">Settings</string>
@@ -69,6 +70,7 @@
     <string name="share_tooltip">Share</string>
     <string name="no_app_available_to_open_the_link">No app available to open the link</string>
     <string name="choose_a_name">Choose a name</string>
+    <string name="enter_a_url">Enter a URL</string>
     <string name="invalid_url">Invalid URL</string>
     <string name="source_already_added">Source already added</string>
     <string name="rss_not_found">RSS not found</string>
@@ -86,4 +88,5 @@
     <string name="other_settings">Other settings</string>
     <string name="search">Search…</string>
     <string name="type_at_least_3_characters">Type at least 3 characters</string>
+    <string name="reposted_item">"Shared a post from "</string>
 </resources>

@@ -23,6 +23,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 public class OpmlHandler {
+    public static final int MAX_TITLE_LENGTH = 200;
+    public static final int MAX_DESCRIPTION_LENGTH = 1000;
+
     public static List<SimpleOutline> getSimpleOutlines(Context ctx, Uri inputUri) {
         if (ctx == null || inputUri == null) return null;
 
@@ -66,9 +69,12 @@ public class OpmlHandler {
             if (!hasOutlineChild && xmlUrl != null && !xmlUrl.isEmpty()) {
                 String title = node.getAttribute("title");
                 String text = node.getAttribute("text");
+                String type = node.getAttribute("type");
                 String imageUrl = node.getAttribute("libreblog:imageUrl");
+                String preferredImageUrl = node.getAttribute("libreblog:preferredImageUrl");
                 String score = node.getAttribute("libreblog:score");
-                outList.add(new SimpleOutline(title, text, xmlUrl, imageUrl, score));
+                String description = node.getAttribute("libreblog:description");
+                outList.add(new SimpleOutline(title, text, xmlUrl, imageUrl, preferredImageUrl, score, description, type));
             }
         }
     }
@@ -95,13 +101,24 @@ public class OpmlHandler {
         opml.appendChild(body);
 
         for (DbHandler.Source source : sources) {
+            String sTitle = source.title == null ? "" : source.title;
+            if (sTitle.length() > MAX_TITLE_LENGTH) {
+                sTitle = sTitle.substring(0, MAX_TITLE_LENGTH) + "...";
+            }
+            String sDescription = source.description == null ? "" : source.description;
+            if (sDescription.length() > MAX_DESCRIPTION_LENGTH) {
+                sDescription = sDescription.substring(0, MAX_DESCRIPTION_LENGTH) + "...";
+            }
+
             Element outline = doc.createElement("outline");
-            outline.setAttribute("text", source.name);
-            outline.setAttribute("title", source.title);
-            outline.setAttribute("type", "rss");
             outline.setAttribute("xmlUrl", source.id);
-            outline.setAttribute("libreblog:imageUrl", source.image);
+            outline.setAttribute("text", source.name);
+            outline.setAttribute("title", sTitle);
+            outline.setAttribute("type", source.type == null ? DbHandler.SOURCE_TYPE_RSS : source.type);
+            outline.setAttribute("libreblog:imageUrl", source.image == null ? "" : source.image);
+            outline.setAttribute("libreblog:preferredImageUrl", source.preferredImage == null ? "" : source.preferredImage);
             outline.setAttribute("libreblog:score", "" + source.score);
+            outline.setAttribute("libreblog:description", sDescription);
             body.appendChild(outline);
         }
 
@@ -125,13 +142,20 @@ public class OpmlHandler {
         public final String text;
         public final String xmlUrl;
         public final String imageUrl;
+        public final String preferredImageUrl;
         public final double score;
+        public final String description;
+        public final String type;
 
-        public SimpleOutline(String title, String text, String xmlUrl, String imageUrl, String sourceStr) {
+        public SimpleOutline(String title, String text, String xmlUrl, String imageUrl,
+                             String preferredImageUrl, String sourceStr, String description, String type) {
             this.title = title;
             this.text = text;
             this.xmlUrl = xmlUrl;
             this.imageUrl = imageUrl;
+            this.preferredImageUrl = preferredImageUrl;
+            this.description = description;
+            this.type = type;
             double score = 2.5;
             try {
                 score = Double.parseDouble(sourceStr);
