@@ -1,7 +1,11 @@
 name: Build Android APK
 
 on:
-  workflow_dispatch:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -21,11 +25,43 @@ jobs:
       - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Install Android SDK build-tools & platform-tools
+        uses: android-actions/setup-android@v3
         with:
-          name: LibreblogRSS-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          api-level: 36
+          build-tools: 36.0.0
+          
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "36.0.0"
+
+      - name: Get version and rename signed APK
+        run: |
+          version=$(./gradlew -q :app:printVersion)
+          src=app/build/outputs/apk/release/app-release-unsigned-signed.apk
+          dst=dist/app-release-${version}.apk
+          mkdir -p dist
+          rm -f dist/* || true
+          if [ -f "$src" ]; then
+            mv "$src" "$dst"
+            echo "Renamed to $dst"
+          else
+            echo "Signed APK not found: $src"
+            ls -l app/build/outputs/apk/release || true
+            exit 1
+          fi
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/app-release-*.apk
