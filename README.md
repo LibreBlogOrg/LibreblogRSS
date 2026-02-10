@@ -1,6 +1,6 @@
 ![Icon](https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/dog_round.webp)
 
-# LibreblogRSS
+# LibreBlog RSS
 
 *A simple Android RSS reader that feels like a social timeline — supports multimedia, .onion sites, and works well with non-monopolistic platforms (Mastodon, Substack, etc.).*
 
@@ -43,3 +43,9 @@ To make static sites built with this [Editor](https://github.com/LibreBlogOrg/Li
 ## Who is this app for?
 
 For people done with social platforms who still want to follow things they find interesting.
+
+## Installation
+
+You can use [Obtainium](https://obtainium.imranr.dev) — add this link as a source: `https://github.com/LibreBlogOrg/LibreblogRSS`
+
+Or download the APK from the [Releases](https://github.com/LibreBlogOrg/LibreblogRSS/releases) page.
