@@ -7,6 +7,12 @@
 [![Download APK](https://badgen.net/badge/Download/APK/green?icon=java)](https://github.com/LibreBlogOrg/LibreblogRSS/releases)
 [![Changelog](https://badgen.net/badge/CHANGE/LOG/red)](https://github.com/LibreBlogOrg/LibreblogRSS/blob/main/CHANGELOG.md)
 
+## Update - Version 1.1.0
+
+From version 1.1.0 onward, LibreBlog RSS will be ActivityPub‑first. The app will try the public outbox first and fall back to RSS if that fails. This lets users see both original posts and reposts (boosts/shares) from people they follow, so timelines behave more like social networks. Currently supported: Mastodon, Pleroma, and Misskey.
+
+We also render custom emojis, since they are widely used in the Fediverse. Currently supported: Mastodon and Pleroma.
+
 <hr/>
 <div style="display:flex;gap:8px;flex-wrap:wrap;">
   <img src="https://github.com/LibreBlogOrg/LibreblogRSS-Resources/blob/main/images/screenshot1.avif" alt="Feed" style="width:250px;">
@@ -21,6 +27,7 @@
 ## Features
 
 - Lightweight, customisable recommendation algorithm.
+- Custom emojis and Fediverse reposts.
 - Light and dark themes.
 - Fullscreen video player.
 - No ads, no tracking.
