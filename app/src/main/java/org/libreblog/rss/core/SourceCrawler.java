@@ -30,6 +30,8 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 
+import org.jdom2.Element;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.libreblog.rss.utils.Settings;
 
@@ -185,6 +187,15 @@ public class SourceCrawler {
         if (description != null && !description.trim().isEmpty()) {
             db.setSourceDescription(source.id, description.trim());
             detectLanguageOf.append(" ").append(description);
+        }
+
+        List<Element> elements = feed.getForeignMarkup();
+        for (Element element : elements) {
+            if (Objects.equals(element.getName(), "following")) {
+                String followingStr = element.getText();
+                db.setSourceFollowing(source.id, followingStr);
+                break;
+            }
         }
 
         int count = 0;
