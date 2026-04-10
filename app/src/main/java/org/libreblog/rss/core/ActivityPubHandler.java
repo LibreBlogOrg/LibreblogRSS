@@ -4,6 +4,7 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 
+import org.jdom2.Element;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,12 +14,17 @@ import org.xml.sax.InputSource;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
 public class ActivityPubHandler {
+    public static final int MAX_FETCH_REQUESTS = 10;
+    public static final int MAX_FOLLOWING_LENGTH = 255;
+    public static final int MAX_FOLLOWING_COUNT = 50;
     private static String repostedItem = "Shared a post from ";
 
     public static void setRepostedItem(String rItem) {
@@ -101,12 +107,54 @@ public class ActivityPubHandler {
             source.description = json.getString("summary");
         }
 
+        if (json.has("following")) {
+            String followingUrl = json.getString("following");
+            updateFollowingList(source, followingUrl);
+        }
+
         if (json.has("icon")) {
             JSONObject iconObj = json.getJSONObject("icon");
             if (iconObj.has("url")) source.image = iconObj.getString("url");
         } else if (json.has("image")) {
             JSONObject imageObj = json.getJSONObject("image");
             if (imageObj.has("url")) source.image = imageObj.getString("url");
+        }
+    }
+
+    private static void updateFollowingList(DbHandler.Source source, String followingUrl) {
+        JSONArray orderedItems = new JSONArray();
+        for (int i = 0; i < MAX_FETCH_REQUESTS
+                && followingUrl != null && orderedItems.length() < MAX_FOLLOWING_COUNT; i++) {
+            try {
+                JSONObject json = fetch(followingUrl);
+                if (json.has("first")) {
+                    followingUrl = json.getString("first");
+                } else if (json.has("next")) {
+                    followingUrl = json.getString("next");
+                } else {
+                    followingUrl = null;
+                }
+
+                if (json.has("orderedItems")) {
+                    JSONArray oI = json.getJSONArray("orderedItems");
+                    for (int j = 0; j < oI.length(); j++) {
+                        String profileUrl = oI.getString(j);
+                        if (profileUrl.length() < MAX_FOLLOWING_LENGTH) {
+                            orderedItems.put(profileUrl);
+                        }
+
+                        if (orderedItems.length() >= MAX_FOLLOWING_LENGTH) {
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                break;
+            }
+        }
+
+        if (orderedItems.length() > 0) {
+            source.following = orderedItems.toString();
         }
     }
 
@@ -238,7 +286,15 @@ public class ActivityPubHandler {
         Reader r = new StringReader(xml);
 
         SyndFeedInput syndFeedInput = new SyndFeedInput();
-        return syndFeedInput.build(new InputSource(r));
+        SyndFeed result = syndFeedInput.build(new InputSource(r));
+
+        List<Element> elements = new ArrayList<>();
+        Element element = new Element("following");
+        element.setText(source.following);
+        elements.add(element);
+        result.setForeignMarkup(elements);
+
+        return result;
     }
 }
 
