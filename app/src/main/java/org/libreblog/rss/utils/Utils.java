@@ -348,7 +348,7 @@ public class Utils {
                 .replace("'", "&apos;");
     }
 
-    public static String linkifyUrlsToHtml(String text) {
+    public static String linkifyUrlsToHtml(String text, boolean removeHTTP) {
         if (text == null) return null;
 
         Pattern urlPattern = Patterns.WEB_URL;
@@ -374,6 +374,11 @@ public class Utils {
             String href = url.startsWith("www.") ? "http://" + url : url;
             String safeHref = href.replace("\"", "%22");
             String safeText = url.replace("<", "&lt;").replace(">", "&gt;");
+
+            if (removeHTTP) {
+                safeText = safeText.replaceAll("(?i)https?://", "").
+                        replaceAll("(?i)http?://", "") ;
+            }
             sb.append("<a href=\"").append(safeHref).append("\">").append(safeText).append("</a>");
             lastEnd = m.end();
         }
