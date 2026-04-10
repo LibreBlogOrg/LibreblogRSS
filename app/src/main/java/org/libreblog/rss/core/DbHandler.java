@@ -21,7 +21,7 @@ import java.util.Objects;
 
 public class DbHandler extends SQLiteOpenHelper {
     public static final String DB_NAME = "reader_db";
-    public static final int DB_VERSION = 39;
+    public static final int DB_VERSION = 40;
 
     //Articles
     public static final String ARTICLES_TABLE_NAME = "articles";
@@ -81,6 +81,7 @@ public class DbHandler extends SQLiteOpenHelper {
     public static final String SOURCES_DESCRIPTION_COL = "description";
     public static final String SOURCES_IMAGE_COL = "image";
     public static final String SOURCES_TYPE_COL = "type";
+    public static final String SOURCES_AP_FOLLOWING_COL = "ap_following";
     public static final String SOURCES_LANGUAGE_COL = "language";
     public static final String SOURCES_PREFERRED_IMAGE_COL = "preferred_image";
     public static final String SOURCES_SCORE_COL = "score";
@@ -96,6 +97,7 @@ public class DbHandler extends SQLiteOpenHelper {
             SOURCES_DESCRIPTION_COL,
             SOURCES_IMAGE_COL,
             SOURCES_TYPE_COL,
+            SOURCES_AP_FOLLOWING_COL,
             SOURCES_LANGUAGE_COL,
             SOURCES_PREFERRED_IMAGE_COL,
             SOURCES_SCORE_COL,
@@ -127,6 +129,8 @@ public class DbHandler extends SQLiteOpenHelper {
                 cursor.getColumnIndexOrThrow(SOURCES_IMAGE_COL));
         source.type = cursor.getString(
                 cursor.getColumnIndexOrThrow(SOURCES_TYPE_COL));
+        source.following = cursor.getString(
+                cursor.getColumnIndexOrThrow(SOURCES_AP_FOLLOWING_COL));
         source.language = cursor.getString(
                 cursor.getColumnIndexOrThrow(SOURCES_LANGUAGE_COL));
         source.preferredImage = cursor.getString(
@@ -180,6 +184,7 @@ public class DbHandler extends SQLiteOpenHelper {
                 + SOURCES_DESCRIPTION_COL + " TEXT,"
                 + SOURCES_IMAGE_COL + " TEXT,"
                 + SOURCES_TYPE_COL + " TEXT,"
+                + SOURCES_AP_FOLLOWING_COL + " TEXT,"
                 + SOURCES_LANGUAGE_COL + " TEXT,"
                 + SOURCES_PREFERRED_IMAGE_COL + " TEXT,"
                 + SOURCES_REFRESHED_COL + " INTEGER,"
@@ -222,7 +227,7 @@ public class DbHandler extends SQLiteOpenHelper {
                             metaTags.getOrDefault("description", null));
                     if (metaDescription != null) {
                         metaDescription = metaDescription.replaceAll("\n", "<br>");
-                        metaDescription = Utils.linkifyUrlsToHtml(metaDescription);
+                        metaDescription = Utils.linkifyUrlsToHtml(metaDescription, false);
                         updateArticleDescription(id, metaDescription);
                     }
 
@@ -279,6 +284,12 @@ public class DbHandler extends SQLiteOpenHelper {
     public void setSourcePreferredImage(String id, String img) {
         ContentValues values = new ContentValues();
         values.put(SOURCES_PREFERRED_IMAGE_COL, img);
+        updateSource(id, values);
+    }
+
+    public void setSourceFollowing(String id, String following) {
+        ContentValues values = new ContentValues();
+        values.put(SOURCES_AP_FOLLOWING_COL, following);
         updateSource(id, values);
     }
 
@@ -341,6 +352,7 @@ public class DbHandler extends SQLiteOpenHelper {
         values.put(SOURCES_DESCRIPTION_COL, source.description);
         values.put(SOURCES_IMAGE_COL, source.image);
         values.put(SOURCES_TYPE_COL, source.type);
+        values.put(SOURCES_AP_FOLLOWING_COL, source.following);
         values.put(SOURCES_LANGUAGE_COL, source.language);
         values.put(SOURCES_PREFERRED_IMAGE_COL, source.preferredImage);
         values.put(SOURCES_SCORE_COL, source.score);
@@ -763,6 +775,7 @@ public class DbHandler extends SQLiteOpenHelper {
         public String image;
         public String preferredImage;
         public String type;
+        public String following;
         public double score = 2.5;
         public int articles = 0;
         public int likes = 0;
