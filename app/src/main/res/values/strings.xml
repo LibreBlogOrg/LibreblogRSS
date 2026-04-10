@@ -89,4 +89,6 @@
     <string name="search">Search…</string>
     <string name="type_at_least_3_characters">Type at least 3 characters</string>
     <string name="reposted_item">"Shared a post from "</string>
+    <string name="following">Following:</string>
+    <string name="and_other_people">and other people...</string>
 </resources>
