@@ -40,7 +40,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.libreblog.rss.R;
+import org.libreblog.rss.core.ActivityPubHandler;
 import org.libreblog.rss.core.DbHandler;
 import org.libreblog.rss.core.EmojiHandler;
 import org.libreblog.rss.core.FeedMaker;
@@ -71,6 +74,7 @@ public class FragmentMain extends Fragment {
     private static TextView createDescriptionTv(DbHandler.Source source, Context context, float density) {
         TextView descriptionTv = new TextView(context);
         String description = EmojiHandler.replaceEmojiShortcodes(source.description, source.id);
+        description += addFollowing(context, source.following);
         Html.ImageGetter ig = EmojiHandler.getImageGetter(context, descriptionTv, 2);
         Spanned spanned = Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT, ig, null);
         Spannable spannable = new SpannableString(spanned);
@@ -91,6 +95,24 @@ public class FragmentMain extends Fragment {
             expanded[0] = !expanded[0];
         });
         return descriptionTv;
+    }
+
+    private static String addFollowing(Context context, String following) {
+        if (following == null || following.isEmpty()) return "";
+
+        try {
+            StringBuilder jsonArrStr = new StringBuilder();
+            JSONArray jsonArr = new JSONArray(following);
+            for (int i = 0; i < jsonArr.length(); i++) {
+                jsonArrStr.append(Utils.linkifyUrlsToHtml(jsonArr.getString(i), true)).append("<br><br>");
+            }
+
+            return "<br><br><b>" + context.getString(R.string.following) + "</b><br><br>" + jsonArrStr +
+                    (jsonArr.length() >= ActivityPubHandler.MAX_FOLLOWING_COUNT ?
+                            context.getString(R.string.and_other_people) + "<br><br>" : "");
+        } catch (JSONException e) {
+            return "";
+        }
     }
 
     private static RelativeLayout createSourceCardHeaderPlusMore(Context context, LinearLayout header, ImageButton moreBt) {
